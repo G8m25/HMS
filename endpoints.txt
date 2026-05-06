@@ -1,0 +1,124 @@
+  Endpoints:
+  - POST /auth/register — body: {username, password, role} → returns JWT + user info
+  - POST /auth/login — body: {username, password} → returns JWT + user info
+  - GET /auth/validate?token=xxx — returns {valid: true/false}
+
+  Roles supported: ADMIN, DOCTOR, PATIENT, EMPLOYEE. Passwords are BCrypt-encrypted. JWT contains username, role, and userId.
+
+
+  - POST /patients — create patient
+  - GET /patients — get all
+  - GET /patients/{id} — get by id
+  - PUT /patients/{id} — update
+  - DELETE /patients/{id} — delete
+
+
+  Endpoints:
+  - POST /doctors — add doctor (isApproved defaults to false)
+  - GET /doctors — list all doctors
+  - GET /doctors/{id} — get by id
+  - PUT /doctors/{id}/approve — approve doctor (for admin use)
+  - DELETE /doctors/{id} — delete doctor
+
+  - POST /appointments — book appointment (defaults to PENDING)
+  - GET /appointments — get all
+  - GET /appointments/patient/{patientId} — get by patient
+  - PUT /appointments/{id}/status?status=CONFIRMED — update status
+  - PUT /appointments/{id}/cancel — cancel appointment
+
+  - POST /billing — create invoice (body: {appointmentId, totalAmount, tax, paymentMethod})
+  - GET /billing/appointment/{appointmentId} — get invoice by appointment
+  - PUT /billing/{id}/status?status=PAID — update payment status (PAID/UNPAID/PARTIALLY_PAID)
+
+
+
+
+
+● Done. Here's the full Docker setup:
+
+  Dockerfiles (all 7 services) — multi-stage build:                                                                                                                                                                  - Stage 1: eclipse-temurin:17-jdk-alpine + Maven → builds the JAR
+  - Stage 2: eclipse-temurin:17-jre-alpine → runs the JAR                                                                                                                                                          
+  docker-compose.yml — 8 containers:
+
+  ┌─────────────────┬──────┬───────────────┐
+  │    Container    │ Port │  Depends On   │
+  ├─────────────────┼──────┼───────────────┤
+  │ hms-mysql       │ 3306 │ —             │
+  ├─────────────────┼──────┼───────────────┤
+  │ hms-eureka      │ 8761 │ —             │
+  ├─────────────────┼──────┼───────────────┤
+  │ hms-gateway     │ 8080 │ eureka        │
+  ├─────────────────┼──────┼───────────────┤
+  │ hms-auth        │ 8081 │ mysql, eureka │
+  ├─────────────────┼──────┼───────────────┤
+  │ hms-doctor      │ 8082 │ mysql, eureka │
+  ├─────────────────┼──────┼───────────────┤
+  │ hms-patient     │ 8083 │ mysql, eureka │
+  ├─────────────────┼──────┼───────────────┤
+  │ hms-appointment │ 8084 │ mysql, eureka │
+  ├─────────────────┼──────┼───────────────┤
+  │ hms-billing     │ 8085 │ mysql, eureka │
+  └─────────────────┴──────┴───────────────┘
+
+  To run:
+  docker-compose up --build
+
+  MySQL initializes all 5 databases from mysql/init.sql on first startup. Services wait for MySQL and Eureka to be healthy before starting.
+
+
+
+
+
+
+                                                                                                                                                                                                                     Access control per service:
+
+  ┌───────────────────────────────┬───────────────────┐
+  │           Endpoint            │   Allowed Roles   │
+  ├───────────────────────────────┼───────────────────┤
+  │ Doctor Service                │                   │
+  ├───────────────────────────────┼───────────────────┤
+  │ POST /doctors                 │ DOCTOR            │
+  ├───────────────────────────────┼───────────────────┤
+  │ PUT /doctors/{id}/approve     │ ADMIN             │
+  ├───────────────────────────────┼───────────────────┤
+  │ DELETE /doctors/{id}          │ ADMIN             │
+  ├───────────────────────────────┼───────────────────┤
+  │ GET /doctors/**               │ Any authenticated │
+  ├───────────────────────────────┼───────────────────┤
+  │ Patient Service               │                   │
+  ├───────────────────────────────┼───────────────────┤
+  │ POST /patients                │ PATIENT           │
+  ├───────────────────────────────┼───────────────────┤
+  │ PUT /patients/{id}            │ PATIENT, ADMIN    │
+  ├───────────────────────────────┼───────────────────┤
+  │ DELETE /patients/{id}         │ ADMIN             │
+  ├───────────────────────────────┼───────────────────┤
+  │ GET /patients/**              │ Any authenticated │
+  ├───────────────────────────────┼───────────────────┤
+  │ Appointment Service           │                   │
+  ├───────────────────────────────┼───────────────────┤
+  │ POST /appointments            │ PATIENT           │
+  ├───────────────────────────────┼───────────────────┤
+  │ PUT /appointments/{id}/status │ DOCTOR, ADMIN     │
+  ├───────────────────────────────┼───────────────────┤
+  │ PUT /appointments/{id}/cancel │ PATIENT, ADMIN    │
+  ├───────────────────────────────┼───────────────────┤
+  │ GET /appointments/**          │ Any authenticated │
+  ├───────────────────────────────┼───────────────────┤
+  │ Billing Service               │                   │
+  ├───────────────────────────────┼───────────────────┤
+  │ POST /billing                 │ ADMIN, DOCTOR     │
+  ├───────────────────────────────┼───────────────────┤
+  │ PUT /billing/{id}/status      │ ADMIN             │
+  ├───────────────────────────────┼───────────────────┤
+  │ GET /billing/**               │ Any authenticated │
+  └───────────────────────────────┴───────────────────┘
+
+  No token = 401 Unauthorized. Wrong role = 403 Forbidden.
+
+
+
+
+
+
+

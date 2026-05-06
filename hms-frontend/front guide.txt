@@ -1,0 +1,57 @@
+ cd hms-frontend
+  npm install
+  npm run dev
+
+  Here's the complete frontend summary:                                                                                                                                                                            
+  Structure:                                                                                                                                                                                                         hms-frontend/
+  ├── package.json
+  ├── vite.config.js
+  ├── tailwind.config.js
+  ├── postcss.config.js
+  ├── index.html
+  └── src/
+      ├── main.jsx
+      ├── index.css
+      ├── App.jsx                    (Router + PrivateRoute + Layout)
+      ├── services/ApiService.js     (Axios instance + interceptors + all API calls)
+      ├── components/Navbar.jsx      (Sticky nav, role badge, logout)
+      └── pages/
+          ├── Login.jsx
+          ├── Register.jsx
+          ├── Dashboard.jsx          (Role-specific panels)
+          ├── DoctorList.jsx         (Cards + Approve/Delete for ADMIN, Create for DOCTOR)
+          ├── PatientList.jsx        (Table + Create for PATIENT, Edit/Delete for ADMIN)
+          ├── Appointments.jsx       (Table + Book for PATIENT, Confirm/Complete for DOCTOR/ADMIN, Cancel for PATIENT/ADMIN)
+          └── Billing.jsx            (Table + Create for ADMIN/DOCTOR, Mark Paid for ADMIN)
+
+  Features included:
+  - JWT stored in localStorage, auto-attached via Axios interceptor
+  - Loading spinners on every data fetch and form submit
+  - Toast notifications (success/error) via react-hot-toast
+  - Role-based UI — buttons only appear for authorized roles:
+
+  ┌──────────────────────────────┬────────────────┐
+  │            Action            │   Visible To   │
+  ├──────────────────────────────┼────────────────┤
+  │ Create Doctor Profile        │ DOCTOR         │
+  ├──────────────────────────────┼────────────────┤
+  │ Approve Doctor               │ ADMIN          │
+  ├──────────────────────────────┼────────────────┤
+  │ Delete Doctor                │ ADMIN          │
+  ├──────────────────────────────┼────────────────┤
+  │ Create Patient Profile       │ PATIENT        │
+  ├──────────────────────────────┼────────────────┤
+  │ Edit Patient                 │ PATIENT, ADMIN │
+  ├──────────────────────────────┼────────────────┤
+  │ Delete Patient               │ ADMIN          │
+  ├──────────────────────────────┼────────────────┤
+  │ Book Appointment             │ PATIENT        │
+  ├──────────────────────────────┼────────────────┤
+  │ Confirm/Complete Appointment │ DOCTOR, ADMIN  │
+  ├──────────────────────────────┼────────────────┤
+  │ Cancel Appointment           │ PATIENT, ADMIN │
+  ├──────────────────────────────┼────────────────┤
+  │ Create Invoice               │ ADMIN, DOCTOR  │
+  ├──────────────────────────────┼────────────────┤
+  │ Mark Paid / Partial          │ ADMIN          │
+  └──────────────────────────────┴────────────────┘

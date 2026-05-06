@@ -1,0 +1,55 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      # --- الجزء اللي ناقص كان هنا ---
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:3000"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+      # ----------------------------
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth/**
+
+        - id: doctor-service
+          uri: lb://doctor-service
+          predicates:
+            - Path=/doctors/**
+
+        - id: patient-service
+          uri: lb://patient-service
+          predicates:
+            - Path=/patients/**
+
+        - id: appointment-service
+          uri: lb://appointment-service
+          predicates:
+            - Path=/appointments/**
+
+        - id: billing-service
+          uri: lb://billing-service
+          predicates:
+            - Path=/billing/**
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+jwt:
+  secret: HMS_Super_Secret_Key_For_JWT_Token_Generation_2024_Must_Be_Long_Enough
